@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:wonders/common_libs.dart';
 import 'package:wonders/logic/collectibles_logic.dart';
 import 'package:wonders/logic/common/animate_utils.dart';
@@ -40,7 +41,11 @@ class _CollectionScreenState extends State<CollectionScreen> with GetItStateMixi
 
   void _scrollToTarget([bool animate = true]) {
     if (_scrollKey.currentContext != null) {
-      Scrollable.ensureVisible(_scrollKey.currentContext!, alignment: 0.15, duration: (animate ? 300 : 0).animateMs);
+      Scrollable.ensureVisible(
+        _scrollKey.currentContext!,
+        alignment: 0.15,
+        duration: (animate ? 300 : 0).animateMs,
+      );
     }
   }
 

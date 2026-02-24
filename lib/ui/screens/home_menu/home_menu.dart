@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:wonders/common_libs.dart';
@@ -25,7 +26,7 @@ class _HomeMenuState extends State<HomeMenu> {
 
   void _handleAboutPressed(BuildContext context) async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    if (!mounted) return;
+    if (!context.mounted) return;
     showAboutDialog(
       context: context,
       applicationName: $strings.appName,
@@ -44,8 +45,6 @@ class _HomeMenuState extends State<HomeMenu> {
 
   void _handleTimelinePressed(BuildContext context) => context.go(ScreenPaths.timeline(widget.data.type));
 
-  void _handleWonderPressed(BuildContext context, WonderData data) => Navigator.pop(context, data.type);
-
   @override
   Widget build(BuildContext context) {
     final double gridWidth = _btnSize(context) * 3 * 1.2;
@@ -54,7 +53,7 @@ class _HomeMenuState extends State<HomeMenu> {
         /// Backdrop / Underlay
         AppBackdrop(
           strength: .5,
-          child: Container(color: $styles.colors.greyStrong.withOpacity(.5)),
+          child: Container(color: $styles.colors.greyStrong.withValues(alpha: 0.5)),
         ),
 
         PopNavigatorUnderlay(),
@@ -94,31 +93,34 @@ class _HomeMenuState extends State<HomeMenu> {
 
   Widget _buildIconGrid(BuildContext context) {
     Widget buildRow(List<Widget> children) => SeparatedRow(
-          mainAxisAlignment: MainAxisAlignment.center,
-          separatorBuilder: () => Gap($styles.insets.sm),
-          children: children,
-        );
+      mainAxisAlignment: MainAxisAlignment.center,
+      separatorBuilder: () => Gap($styles.insets.sm),
+      children: children,
+    );
     return SeparatedColumn(
       separatorBuilder: () => Gap($styles.insets.sm),
       mainAxisSize: MainAxisSize.min,
       children: [
         buildRow([
-          _buildGridBtn(context, wondersLogic.all[0]),
-          _buildGridBtn(context, wondersLogic.all[1]),
-          _buildGridBtn(context, wondersLogic.all[2]),
+          _GridBtn(wondersLogic.all[0], widget.data),
+          _GridBtn(wondersLogic.all[1], widget.data),
+          _GridBtn(wondersLogic.all[2], widget.data),
         ]),
         buildRow([
-          _buildGridBtn(context, wondersLogic.all[3]),
+          _GridBtn(wondersLogic.all[3], widget.data),
           SizedBox(
             width: _btnSize(context),
-            child: SvgPicture.asset(SvgPaths.compassFull, colorFilter: $styles.colors.offWhite.colorFilter),
+            child: SvgPicture.asset(
+              SvgPaths.compassFull,
+              colorFilter: $styles.colors.offWhite.colorFilter,
+            ),
           ),
-          _buildGridBtn(context, wondersLogic.all[4]),
+          _GridBtn(wondersLogic.all[4], widget.data),
         ]),
         buildRow([
-          _buildGridBtn(context, wondersLogic.all[5]),
-          _buildGridBtn(context, wondersLogic.all[6]),
-          _buildGridBtn(context, wondersLogic.all[7]),
+          _GridBtn(wondersLogic.all[5], widget.data),
+          _GridBtn(wondersLogic.all[6], widget.data),
+          _GridBtn(wondersLogic.all[7], widget.data),
         ]),
       ],
     );
@@ -126,48 +128,73 @@ class _HomeMenuState extends State<HomeMenu> {
 
   Widget _buildBottomBtns(BuildContext context) {
     return ValueListenableBuilder(
-        valueListenable: settingsLogic.currentLocale,
-        builder: (_, __, ___) {
-          return SeparatedColumn(
-            separatorBuilder: () => Divider(thickness: 1.5, height: 1).maybeAnimate().scale(
-                  duration: $styles.times.slow,
-                  delay: $styles.times.pageTransition + 200.delayMs,
-                  curve: Curves.easeOutBack,
-                ),
-            children: [
-              _MenuTextBtn(
-                  label: $strings.homeMenuButtonExplore,
-                  icon: AppIcons.timeline,
-                  onPressed: () => _handleTimelinePressed(context)),
-              _MenuTextBtn(
-                  label: $strings.homeMenuButtonView,
-                  icon: AppIcons.collection,
-                  onPressed: () => _handleCollectionPressed(context)),
-              _MenuTextBtn(
-                label: $strings.homeMenuButtonAbout,
-                icon: AppIcons.info,
-                onPressed: () => _handleAboutPressed(context),
-              ),
-            ]
-                .animate(interval: 50.delayMs)
-                .fade(delay: $styles.times.pageTransition + 50.delayMs)
-                .slide(begin: Offset(0, .1), curve: Curves.easeOut),
-          );
-        });
+      valueListenable: settingsLogic.currentLocale,
+      builder: (_, __, ___) {
+        return SeparatedColumn(
+          separatorBuilder: () => Divider(thickness: 1.5, height: 1).maybeAnimate().scale(
+            duration: $styles.times.slow,
+            delay: $styles.times.pageTransition + 200.delayMs,
+            curve: Curves.easeOutBack,
+          ),
+          children:
+              [
+                    _MenuTextBtn(
+                      label: $strings.homeMenuButtonExplore,
+                      icon: AppIcons.timeline,
+                      onPressed: () => _handleTimelinePressed(context),
+                    ),
+                    _MenuTextBtn(
+                      label: $strings.homeMenuButtonView,
+                      icon: AppIcons.collection,
+                      onPressed: () => _handleCollectionPressed(context),
+                    ),
+                    _MenuTextBtn(
+                      label: $strings.homeMenuButtonAbout,
+                      icon: AppIcons.info,
+                      onPressed: () => _handleAboutPressed(context),
+                    ),
+                  ]
+                  .animate(interval: 50.delayMs)
+                  .fade(delay: $styles.times.pageTransition + 50.delayMs)
+                  .slide(begin: Offset(0, .1), curve: Curves.easeOut),
+        );
+      },
+    );
   }
+}
 
-  Widget _buildGridBtn(BuildContext context, WonderData btnData) {
-    bool isSelected = btnData == widget.data;
-    return Container(
-      width: _btnSize(context),
-      height: _btnSize(context),
+class _GridBtn extends StatefulWidget {
+  const _GridBtn(this.btnData, this.selectedData);
+  final WonderData btnData;
+  final WonderData selectedData;
+  double _btnSize(BuildContext context) => (context.sizePx.shortestSide / 5).clamp(60, 100);
+
+  @override
+  State<_GridBtn> createState() => _GridBtnState();
+}
+
+class _GridBtnState extends State<_GridBtn> {
+  bool _isOver = false;
+
+  void _handleWonderPressed(BuildContext context, WonderData data) => Navigator.pop(context, data.type);
+
+  @override
+  Widget build(BuildContext context) {
+    WonderData btnData = widget.btnData;
+    bool isSelected = btnData == widget.selectedData;
+
+    Widget iconImage = Image.asset(btnData.type.homeBtn, fit: BoxFit.cover);
+
+    Widget gridBtn = Container(
+      width: widget._btnSize(context),
+      height: widget._btnSize(context),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular($styles.corners.md),
         boxShadow: !isSelected
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 3,
                   spreadRadius: 3,
                   offset: Offset(0, 2),
@@ -182,10 +209,28 @@ class _HomeMenuState extends State<HomeMenu> {
           onPressed: () => _handleWonderPressed(context, btnData),
           padding: EdgeInsets.zero,
           semanticLabel: btnData.title,
-          child: SizedBox.expand(child: Image.asset(btnData.type.homeBtn, fit: BoxFit.cover)),
+          child: SizedBox.expand(
+            child: kIsWeb
+                ? AnimatedScale(
+                    alignment: Alignment.center,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    scale: _isOver ? 1.1 : 1.0,
+                    child: iconImage,
+                  )
+                : iconImage,
+          ),
         ),
       ),
     );
+
+    return kIsWeb
+        ? MouseRegion(
+            onEnter: (_) => setState(() => _isOver = true),
+            onExit: (_) => setState(() => _isOver = false),
+            child: gridBtn,
+          )
+        : gridBtn;
   }
 }
 
